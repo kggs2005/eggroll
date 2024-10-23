@@ -60,7 +60,7 @@ class GameController:
 
             # If eggs are rolling, animate it
             if self.__game.current_game_state().eggs_are_rolling():
-                sleep(0.3)
+                sleep(0.1)
                 self.__game.add_game_state(self.__game.next_game_state())
                 
             # Otherwise, if there are any queued moves, perform the move
@@ -75,7 +75,7 @@ class GameController:
                 # Perform each valid move but immediately stop if the game is over 
                 valid_moves = (char.lower() for char in entered_moves if char.lower() in 'udlr')
                 for char in valid_moves:
-                    if self.__game.is_over() or move_queue.full():
+                    if move_queue.full():
                         break
                     move = self.__char_to_move(char)
                     move_queue.put_nowait(move)
