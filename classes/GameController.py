@@ -1,4 +1,6 @@
-from os import name, path, system
+from os import name, system
+from queue import Queue
+from time import sleep
 
 from .Game import Game
 from .GameState import GameState
@@ -47,21 +49,36 @@ class GameController:
 
     def display_ui(self) -> None:
         '''Update the UI for every state change.'''
+        # In case of multiple moves for one input, queue the moves.
+        max_moves = self.__game.current_game_state().get_remaining_moves()
+        move_queue: Queue[Move] = Queue(max_moves)
+
         while not self.__game.is_over():
             # Show current game state
             self.__clear()
             print(self.__game.current_game_state().state_str())
 
-            # Wait for input
-            entered_moves = input('Enter move/s: ')
+            # If eggs are rolling, animate it
+            if self.__game.current_game_state().eggs_are_rolling():
+                sleep(0.3)
+                self.__game.add_game_state(self.__game.next_game_state())
+                
+            # Otherwise, if there are any queued moves, perform the move
+            elif not move_queue.empty():
+                self.__game.make_move(move_queue.get_nowait())
+            
+            # Otherwise ask for the player's input
+            else:
+                # Wait for input
+                entered_moves = input('Enter move/s: ')
 
-            # Perform each valid move but immediately stop if the game is over 
-            valid_moves = (char for char in entered_moves.replace(' ', '').lower() if char in ('u', 'd', 'l', 'r'))
-            for char in valid_moves:
-                if self.__game.is_over():
-                    break
-                move = self.__char_to_move(char)
-                self.__game.make_move(move)
+                # Perform each valid move but immediately stop if the game is over 
+                valid_moves = (char.lower() for char in entered_moves if char.lower() in 'udlr')
+                for char in valid_moves:
+                    if self.__game.is_over() or move_queue.full():
+                        break
+                    move = self.__char_to_move(char)
+                    move_queue.put_nowait(move)
         
         # Show final game state
         self.__clear()

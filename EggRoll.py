@@ -27,4 +27,5 @@ def main():
         game_controller.display_ui()
 
 
-main()
+if __name__ == '__main__':
+    main()
