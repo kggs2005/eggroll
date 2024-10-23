@@ -1,5 +1,6 @@
-from os import name, system
+from os import name, path, system
 from queue import Queue
+from sys import argv, stderr
 from time import sleep
 
 from .Game import Game
@@ -15,18 +16,40 @@ class GameController:
 
 
     # Constructor
-    def __init__(self, file):
-        '''Creates a new game with a level file'''
-        # Get necessary data
-        lines = file.readlines()
-        moves = int(lines[1].strip())
-        grid = [[Tile(emoji) for emoji in row.strip()] for row in lines[2:] if row]
+    def __init__(self):
+        '''Creates a new game with the terminal arguments'''
+        # Requires at least 2 arguments
+        if len(argv) < 2:
+            print('The game requires a filename to start.', file=stderr)
+            return
+        
+        # Obtain filename from terminal arguments
+        filename = ' '.join(argv[1:])
 
-        # Close file as it is no longer needed
-        file.close()
+        # Get relative path of level file
+        this_path = path.abspath(path.dirname(__file__))
+        file_path = path.join(this_path, f'../levels/{filename}')
 
-        # Create new game
-        self.__game = Game(GameState(grid, (), moves, 0))
+        try:
+            # Attempt to search for the file given the file path
+            file = open(file_path, 'r', encoding='utf8')
+        except FileNotFoundError:
+            # Filename does not exist
+            print(f'Level filename \'{filename}\' does not exist.')
+        else:
+            # Get necessary data
+            lines = file.readlines()
+            moves = int(lines[1].strip())
+            grid = [[Tile(emoji) for emoji in row.strip()] for row in lines[2:] if row]
+
+            # Close file as it is no longer needed
+            file.close()
+
+            # Create new game
+            self.__game = Game(GameState(grid, (), moves, 0))
+
+            # Display UI
+            self.__display_ui()
     
 
     # Methods
@@ -47,7 +70,7 @@ class GameController:
             return Move(MoveType.RIGHT)
 
 
-    def display_ui(self) -> None:
+    def __display_ui(self) -> None:
         '''Update the UI for every state change.'''
         # In case of multiple moves for one input, queue the moves.
         max_moves = self.__game.current_game_state().get_remaining_moves()
